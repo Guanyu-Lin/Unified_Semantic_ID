@@ -82,7 +82,7 @@ def main():
 
 
 
-    user_seq, max_item, max_user, sample_seq = \
+    user_seq, max_item, max_user, max_seq_length_all, sample_seq = \
         get_user_seqs_and_sample(args.data_file, args.sample_file)
 
     attribute2item, item2attribute, codebook_size = get_item2attribute_json(item2attribute_file, args.codebook_size)
@@ -91,6 +91,7 @@ def main():
     args.item_size = max_item + 2
     args.user_size = max_user + 1
     args.mask_id = max_item + 1
+    args.max_seq_length_all = max_seq_length_all
 
     # save model args
     args_str = f'{args.model_name}-{args.data_name}-{args.ckp}-{args.hidden_size}-{args.id_dim_size}-{args.semantic_dim_size}'

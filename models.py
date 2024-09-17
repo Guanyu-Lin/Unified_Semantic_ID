@@ -61,7 +61,7 @@ class S3RecModel(nn.Module):
 
 
     #
-    def add_position_embedding(self, sequence):
+    def add_position_embedding(self, sequence, extended_cluster_mask):
 
         seq_length = sequence.size(1)
         position_ids = torch.arange(seq_length, dtype=torch.long, device=sequence.device)
@@ -82,23 +82,35 @@ class S3RecModel(nn.Module):
         import pdb
         pdb.set_trace()
         cluster_labels = rq_index[:, :, 0]
-        unique_labels, labels_count = cluster_labels.unique(dim=1, return_counts=True)
-        cluster_emb = torch.zeros_like(unique_labels, dtype=torch.float).scatter_add_(1, cluster_labels, sequence_emb)
-        cluster_emb = cluster_emb / labels_count.float().unsqueeze(1)
 
+        label_count = extended_cluster_mask.sum(dim=2) # b, c
+        weight = torch.nn.functional.normalize(weight, p=1, dim=2) # l1 normalization
+        cluster_emb = torch.mm(weight, sequence_emb) # b, c, d
+        cluster_mask = (label_count > 0).long()
+
+
+   
         sequence_emb = self.LayerNorm(sequence_emb)
         sequence_emb = self.dropout(sequence_emb)
 
-        return rq_loss, sequence_emb, cluster_emb
+        return rq_loss, sequence_emb, cluster_emb, cluster_mask
 
     # Fine tune
     # same as SASRec
-    def finetune(self, input_ids, user_ids):
+    def finetune(self, input_ids, all_ids, user_ids):
 
         attention_mask = (input_ids > 0).long()
+        all_attention_mask = (all_ids > 0).long()
         extended_attention_mask = attention_mask.unsqueeze(1).unsqueeze(2) # torch.int64
+
         max_len = attention_mask.size(-1)
+        all_max_len = all_attention_mask.size(-1)
+
         attn_shape = (1, max_len, max_len)
+
+        cluster2his_mask = torch.ones(self.args.codebook_size)
+        extended_cluster2his_mask = cluster2his_mask.view(-1, self.args.codebook_size, 1) & all_attention_mask.view(-1, 1, all_max_len) # b, c, s
+
         subsequent_mask = torch.triu(torch.ones(attn_shape), diagonal=1) # torch.uint8
         subsequent_mask = (subsequent_mask == 0).unsqueeze(1)
         subsequent_mask = subsequent_mask.long()
@@ -113,9 +125,13 @@ class S3RecModel(nn.Module):
         # sequence_text_emb = self.look_embedding(input_ids)
         # sequence_rq_emb = self.convert_rq_embedding(sequence_text_emb)
 
-        rq_loss, sequence_emb, cluster_emb = self.add_position_embedding(input_ids)
-        cluster_mask = torch.ones(cluster_emb.shape[1])
-        extended_cluster_mask = attention_mask.view(-1, max_len, 1) & cluster_mask.view(-1, 1, cluster_emb.shape[1])
+        rq_loss, sequence_emb, cluster_emb, cluster_mask = self.add_position_embedding(input_ids, extended_cluster2his_mask)
+        # b, c
+        extended_target2cluster_mask = attention_mask.view(-1, max_len, 1) & cluster_mask.view(-1, 1, self.args.codebook_size) # b, c, s
+
+        
+        # cluster_mask = torch.ones(cluster_emb.shape[1])
+        # extended_cluster_mask = attention_mask.view(-1, max_len, 1) & cluster_mask.view(-1, 1, cluster_emb.shape[1])
 
 
         user_emb = self.user_embeddings(user_ids)
@@ -124,7 +140,7 @@ class S3RecModel(nn.Module):
                                                 output_all_encoded_layers=True)
         
         item_encoded_layers_cluster = self.item_encoder_cluster(sequence_emb, cluster_emb,
-                                                extended_cluster_mask,
+                                                extended_target2cluster_mask,
                                                 output_all_encoded_layers=True)
         
         # rq_loss_user, _, rq_user_embeddings = self.rq_model_user(item_encoded_layers[-1])

@@ -178,9 +178,9 @@ class FinetuneTrainer(Trainer):
             for i, batch in rec_data_iter:
                 # 0. batch_data will be sent into the device(GPU or CPU)
                 batch = tuple(t.to(self.device) for t in batch)
-                user_ids, input_ids, target_pos, target_neg, _ = batch
+                user_ids, input_ids, all_ids, target_pos, target_neg, _ = batch
                 # Binary cross_entropy
-                rq_loss, sequence_output = self.model.finetune(input_ids, user_ids)
+                rq_loss, sequence_output = self.model.finetune(input_ids, all_ids, user_ids)
                 cross_loss = self.cross_entropy(sequence_output, target_pos, target_neg)
                 self.optim.zero_grad()
                 (self.args.rq_loss_weight * rq_loss + cross_loss).backward(retain_graph=True)
@@ -211,8 +211,8 @@ class FinetuneTrainer(Trainer):
                 for i, batch in rec_data_iter:
                     # 0. batch_data will be sent into the device(GPU or cpu)
                     batch = tuple(t.to(self.device) for t in batch)
-                    user_ids, input_ids, target_pos, target_neg, answers = batch
-                    recommend_output = self.model.finetune(input_ids, user_ids)
+                    user_ids, input_ids, all_ids, target_pos, target_neg, answers = batch
+                    recommend_output = self.model.finetune(input_ids, all_ids, user_ids)
 
                     recommend_output = recommend_output[:, -1, :]
                     # 推荐的结果
@@ -246,8 +246,8 @@ class FinetuneTrainer(Trainer):
                 for i, batch in rec_data_iter:
                     # 0. batch_data will be sent into the device(GPU or cpu)
                     batch = tuple(t.to(self.device) for t in batch)
-                    user_ids, input_ids, target_pos, target_neg, answers, sample_negs = batch
-                    _, recommend_output = self.model.finetune(input_ids, user_ids)
+                    user_ids, input_ids, all_ids, target_pos, target_neg, answers, sample_negs = batch
+                    _, recommend_output = self.model.finetune(input_ids, all_ids, user_ids)
                     test_neg_items = torch.cat((answers, sample_negs), -1)
                     recommend_output = recommend_output[:, -1, :]
 

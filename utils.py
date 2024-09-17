@@ -194,12 +194,14 @@ def get_user_seqs_and_sample(data_file, sample_file):
     user_seq = []
     item_set = set()
     max_user = 0
+    max_seq_length_all = 0
     for line in lines:
         user, items = line.strip().split(' ', 1)
         items = items.split(' ')
         items = [int(item) for item in items]
         user_seq.append(items)
         item_set = item_set | set(items)
+        if len(items) > max_seq_length_all: max_seq_length_all = len(items)
         if int(user) > max_user: max_user = int(user)
     max_item = max(item_set)
 
@@ -213,7 +215,7 @@ def get_user_seqs_and_sample(data_file, sample_file):
 
     assert len(user_seq) == len(sample_seq)
 
-    return user_seq, max_item, max_user, sample_seq
+    return user_seq, max_item, max_user, max_seq_length_all, sample_seq
 
 def get_item2attribute_json(data_file, codebook_size):
     item2attribute = json.loads(open(data_file).readline())

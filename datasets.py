@@ -125,6 +125,7 @@ class SASRecDataset(Dataset):
         self.test_neg_items = test_neg_items
         self.data_type = data_type
         self.max_len = args.max_seq_length
+        self.max_len_all = args.max_seq_length_all - 3
 
     def __getitem__(self, index):
 
@@ -142,6 +143,7 @@ class SASRecDataset(Dataset):
 
         # test [0, 1, 2, 3, 4, 5]
         # answer [6]
+        all_ids = items[:-3]
         if self.data_type == "train":
             input_ids = items[:-3]
             target_pos = items[1:-2]
@@ -167,11 +169,17 @@ class SASRecDataset(Dataset):
         input_ids = [0] * pad_len + input_ids
         target_pos = [0] * pad_len + target_pos
         target_neg = [0] * pad_len + target_neg
+        pad_len_all = self.max_len_all - len(all_ids)
+        all_ids = [0] * pad_len_all + all_ids
 
         input_ids = input_ids[-self.max_len:]
         target_pos = target_pos[-self.max_len:]
         target_neg = target_neg[-self.max_len:]
+        
 
+        
+
+        all_ids = all_ids[:]
         assert len(input_ids) == self.max_len
         assert len(target_pos) == self.max_len
         assert len(target_neg) == self.max_len
@@ -182,6 +190,7 @@ class SASRecDataset(Dataset):
             cur_tensors = (
                 torch.tensor(user_id, dtype=torch.long), # user_id for testing
                 torch.tensor(input_ids, dtype=torch.long),
+                torch.tensor(all_ids, dtype=torch.long),
                 torch.tensor(target_pos, dtype=torch.long),
                 torch.tensor(target_neg, dtype=torch.long),
                 torch.tensor(answer, dtype=torch.long),
@@ -191,6 +200,7 @@ class SASRecDataset(Dataset):
             cur_tensors = (
                 torch.tensor(user_id, dtype=torch.long),  # user_id for testing
                 torch.tensor(input_ids, dtype=torch.long),
+                torch.tensor(all_ids, dtype=torch.long),
                 torch.tensor(target_pos, dtype=torch.long),
                 torch.tensor(target_neg, dtype=torch.long),
                 torch.tensor(answer, dtype=torch.long),
