@@ -23,7 +23,7 @@ for sample, label in zip(samples, labels):
     M[label, torch.arange(sample.shape[0])] = 1
     M = torch.nn.functional.normalize(M, p=1, dim=1)
     ls.append(torch.mm(M, sample))
-
+ls = torch.cat(ls, 0)
     
 # M = torch.zeros(samples.shape[0], labels.max()+1, samples.shape[1])
 # M[labels, :, torch.arange(samples.shape[1])] = 1
