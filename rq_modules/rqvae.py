@@ -1,0 +1,117 @@
+import torch
+from vector_quantize_pytorch import ResidualVQ
+
+from torch import nn
+from typing import NamedTuple
+
+from .encoder import MLP
+from .decoder import Decode_MLP
+
+from .loss import ReconstuctionLoss
+
+
+class RqVaeOutput(NamedTuple):
+    embeddings: torch.Tensor
+    sem_ids: torch.Tensor
+    commit_loss: torch.Tensor
+
+
+class RqVae(nn.Module):
+    def __init__(
+        self,
+        input_dim: int,
+        embed_dim: int,
+        hidden_dim: int,
+        codebook_size: int,
+        n_layers: int = 1,
+        commitment_weight: float = 0.25,
+        loss_weight: float = 10.0,
+        n_res_block: int = 2,
+        n_res_channel: int = 32,
+        is_cos: bool = False,
+        reshape_dim = 64
+    ) -> None:
+        super().__init__()
+
+        self.input_dim = input_dim
+        self.embed_dim = embed_dim
+        self.hidden_dim = hidden_dim
+        self.n_layers = n_layers
+        self.codebook_size = codebook_size
+        self.commitment_weight = commitment_weight
+        self.loss_weight = loss_weight
+
+        self.rvq = ResidualVQ(
+            dim = self.embed_dim,
+            codebook_size = self.codebook_size,
+            num_quantizers = self.n_layers,
+            kmeans_init = True,   # set to True
+            use_cosine_sim = is_cos,
+            kmeans_iters = 100,     # number of kmeans iterations to calculate the centroids for the codebook on init
+            threshold_ema_dead_code=2
+        )
+        # self.layers = nn.ModuleList(modules=[
+        #     Quantize(embed_dim=embed_dim // 2, n_embed=codebook_size)
+        #     for _ in range(n_layers)
+        # ])
+
+        self.encoder = MLP(input_dim=input_dim,
+            hidden_dim=hidden_dim,
+            out_dim=embed_dim)
+        # self.encoder = Encoder(self.input_dim, self.embed_dim, n_res_block, n_res_channel)
+        # self.decoder = Decoder(self.embed_dim, self.input_dim, n_res_block, n_res_channel)
+
+        # self.relu = 
+        self.decoder = Decode_MLP(input_dim=embed_dim,
+            hidden_dim=hidden_dim,
+            out_dim=input_dim)
+           
+        self.decoder_rec = Decode_MLP(input_dim=embed_dim,
+            hidden_dim=hidden_dim,
+            out_dim=reshape_dim)
+
+
+
+    def encode(self, x: torch.Tensor) -> torch.Tensor:
+        return self.encoder(x)
+
+    def decode(self, x: torch.Tensor) -> torch.Tensor:
+        return self.decoder(x)
+
+    def get_semantic_ids(self,
+                         x: torch.Tensor,
+                         gumbel_t=0.001) -> torch.Tensor:
+        # import pdb
+        # pdb.set_trace()
+        res = self.encode(x)
+
+        # embs, residuals, sem_ids = [], [], []
+        embs, sem_ids, commit_loss = self.rvq(res)
+
+        # for layer in self.layers:
+        #     residuals.append(res)
+        #     quantized = layer(res, temperature=gumbel_t)
+        #     emb, id = quantized.embeddings, quantized.ids
+        #     res = res - emb
+        #     sem_ids.append(id)
+        #     embs.append(emb)
+
+        return RqVaeOutput(
+            embeddings=embs,
+            sem_ids=sem_ids,
+            commit_loss = commit_loss,
+        )
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        quantized = self.get_semantic_ids(x)
+        embs, sem_ids, rqvae_loss = quantized.embeddings, quantized.sem_ids, quantized.commit_loss
+        # import pdb
+        # pdb.set_trace()
+        x_hat = self.decode(embs)
+        
+        reconstuction_loss = ReconstuctionLoss()(x_hat, x)
+        # rqvae_loss = RqVaeLoss(self.commitment_weight)(residuals, embs)
+        # rqvae_loss = rqvae_loss.mean(-1)
+        loss = (reconstuction_loss.mean() + self.loss_weight * rqvae_loss.sum())
+
+        return loss, sem_ids, self.decoder_rec(embs)
