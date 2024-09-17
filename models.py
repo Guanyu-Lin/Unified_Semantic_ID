@@ -70,7 +70,7 @@ class S3RecModel(nn.Module):
         text_item_embeddings = self.text_item_embeddings(sequence)
 
         rq_loss, rq_index, rq_item_embeddings = self.rq_model(text_item_embeddings)
-
+        labels = rq_index[:, :, 0]
 
         unique_item_embeddings = self.unique_item_embeddings(sequence)
         item_embeddings = rq_item_embeddings + unique_item_embeddings
@@ -79,14 +79,26 @@ class S3RecModel(nn.Module):
 
 
         sequence_emb = item_embeddings + position_embeddings
+        # # import pdb
+        # # pdb.set_trace()
+
+        # label_count = extended_cluster_mask.sum(dim=2) # b, c
+        # weight = torch.nn.functional.normalize(extended_cluster_mask.float(), p=1, dim=2) # l1 normalization
+        # cluster_emb = torch.mm(weight, sequence_emb) # b, c, d
+        cluster_mask = []
+
+        cluster_emb = []
+        for sample, label in zip(sequence_emb, labels):
+            M = torch.zeros(self.args.codebook_size, sample.shape[0])
+            M[label, torch.arange(sample.shape[0])] = 1
+            cluster_mask.append(M)
+
+            M = torch.nn.functional.normalize(M, p=1, dim=1)
+            cluster_emb.append(torch.mm(M, sample))
         import pdb
         pdb.set_trace()
-
-        label_count = extended_cluster_mask.sum(dim=2) # b, c
-        weight = torch.nn.functional.normalize(extended_cluster_mask.float(), p=1, dim=2) # l1 normalization
-        cluster_emb = torch.mm(weight, sequence_emb) # b, c, d
-        cluster_mask = (label_count > 0).long()
-
+        cluster_emb = torch.cat(cluster_emb, 0)
+        cluster_mask = torch.cat(cluster_mask, 0)
 
    
         sequence_emb = self.LayerNorm(sequence_emb)
