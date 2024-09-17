@@ -83,7 +83,7 @@ class S3RecModel(nn.Module):
         pdb.set_trace()
 
         label_count = extended_cluster_mask.sum(dim=2) # b, c
-        weight = torch.nn.functional.normalize(weight, p=1, dim=2) # l1 normalization
+        weight = torch.nn.functional.normalize(extended_cluster_mask.float(), p=1, dim=2) # l1 normalization
         cluster_emb = torch.mm(weight, sequence_emb) # b, c, d
         cluster_mask = (label_count > 0).long()
 
@@ -123,8 +123,9 @@ class S3RecModel(nn.Module):
 
         # sequence_text_emb = self.look_embedding(input_ids)
         # sequence_rq_emb = self.convert_rq_embedding(sequence_text_emb)
+        cluster_emb, cluster_mask = self.add_position_embedding_cluster(all_ids, extended_cluster2his_mask)
 
-        rq_loss, sequence_emb, cluster_emb, cluster_mask = self.add_position_embedding(input_ids, extended_cluster2his_mask)
+        rq_loss, sequence_emb = self.add_position_embedding(input_ids)
         # b, c
         extended_target2cluster_mask = attention_mask.view(-1, max_len, 1) & cluster_mask.view(-1, 1, self.args.codebook_size) # b, s, c
 
