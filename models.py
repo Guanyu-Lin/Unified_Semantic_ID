@@ -79,7 +79,8 @@ class S3RecModel(nn.Module):
 
 
         sequence_emb = item_embeddings + position_embeddings
-
+        import pdb
+        pdb.set_trace()
         cluster_labels = rq_index[:, :, 0]
         unique_labels, labels_count = cluster_labels.unique(dim=1, return_counts=True)
         cluster_emb = torch.zeros_like(unique_labels, dtype=torch.float).scatter_add_(1, cluster_labels, sequence_emb)
@@ -111,11 +112,12 @@ class S3RecModel(nn.Module):
 
         # sequence_text_emb = self.look_embedding(input_ids)
         # sequence_rq_emb = self.convert_rq_embedding(sequence_text_emb)
+
+        rq_loss, sequence_emb, cluster_emb = self.add_position_embedding(input_ids)
         cluster_mask = torch.ones(cluster_emb.shape[1])
         extended_cluster_mask = attention_mask.view(-1, max_len, 1) & cluster_mask.view(-1, 1, cluster_emb.shape[1])
 
 
-        rq_loss, sequence_emb, cluster_emb = self.add_position_embedding(input_ids)
         user_emb = self.user_embeddings(user_ids)
         item_encoded_layers = self.item_encoder(sequence_emb,
                                                 extended_attention_mask,
@@ -125,9 +127,9 @@ class S3RecModel(nn.Module):
                                                 extended_cluster_mask,
                                                 output_all_encoded_layers=True)
         
-        rq_loss_user, _, rq_user_embeddings = self.rq_model_user(item_encoded_layers[-1])
-        sequence_output = item_encoded_layers[-1] + item_encoded_layers_cluster[-1] + torch.tile(torch.unsqueeze(user_emb, 1), (1, max_len, 1)) + rq_user_embeddings
-        return rq_loss + rq_loss_user, sequence_output
+        # rq_loss_user, _, rq_user_embeddings = self.rq_model_user(item_encoded_layers[-1])
+        sequence_output = item_encoded_layers[-1] + item_encoded_layers_cluster[-1] + torch.tile(torch.unsqueeze(user_emb, 1), (1, max_len, 1)) 
+        return rq_loss, sequence_output
 
     def init_weights(self, module):
         """ Initialize the weights.
