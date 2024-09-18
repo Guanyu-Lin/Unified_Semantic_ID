@@ -169,8 +169,8 @@ class S3RecModel(nn.Module):
         # cluster_mask = torch.ones(cluster_emb.shape[1])
         # extended_cluster_mask = attention_mask.view(-1, max_len, 1) & cluster_mask.view(-1, 1, cluster_emb.shape[1])
 
-        import pdb
-        pdb.set_trace()
+        # import pdb
+        # pdb.set_trace()
         user_emb = self.user_embeddings(user_ids)
         item_encoded_layers = self.item_encoder(sequence_emb,
                                                 extended_attention_mask,
