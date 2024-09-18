@@ -133,7 +133,7 @@ class SelfAttention(nn.Module):
         context_layer = context_layer.view(*new_context_layer_shape)
         hidden_states = self.dense(context_layer)
         hidden_states = self.out_dropout(hidden_states)
-        hidden_states = self.LayerNorm(hidden_states + input_tensor)
+        hidden_states = self.LayerNorm(hidden_states + input_tensor_query)
 
         return hidden_states
 
