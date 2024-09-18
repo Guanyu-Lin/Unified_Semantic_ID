@@ -116,6 +116,9 @@ class SelfAttention(nn.Module):
         # Apply the attention mask is (precomputed for all layers in BertModel forward() function)
         # [batch_size heads seq_len seq_len] scores
         # [batch_size 1 1 seq_len]
+        if input_tensor.shape[1] == 512:
+            import pdb
+            pdb.set_trace()
         attention_scores = attention_scores + attention_mask
 
         # Normalize the attention scores to probabilities.
@@ -199,9 +202,7 @@ class Encoder_Cluster(nn.Module):
                                     for _ in range(args.num_hidden_layers)])
 
     def forward(self, hidden_states, hidden_states_cluster, attention_mask, output_all_encoded_layers=True):
-        import pdb
 
-        pdb.set_trace()
         all_encoder_layers = []
         for layer_module in self.layer:
             hidden_states = layer_module(hidden_states, hidden_states_cluster, attention_mask)
