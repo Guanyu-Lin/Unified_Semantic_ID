@@ -90,10 +90,10 @@ class S3RecModel(nn.Module):
         for sample, label, mask in zip(rq_item_embeddings, labels, all_attention_mask):
             M = torch.zeros(self.args.codebook_size, sample.shape[0])
             M[label, torch.arange(sample.shape[0])] = 1
-            M = M.long() & mask.view(-1, 1, self.args.max_seq_length_all) # b, s, c
+            M = M.long() & mask.view(-1, 1, self.args.max_seq_length_all) # c, s
             cluster_mask.append(M)
 
-            M = torch.nn.functional.normalize(M, p=1, dim=1)
+            M = torch.nn.functional.normalize(M.float(), p=1, dim=1)
             cluster_emb.append(torch.mm(M, sample))
         import pdb
         pdb.set_trace()
