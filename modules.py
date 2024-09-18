@@ -84,15 +84,15 @@ class SelfAttention(nn.Module):
         self.attention_head_size = int(args.hidden_size / args.num_attention_heads)
         self.all_head_size = self.num_attention_heads * self.attention_head_size
 
-        self.query = nn.Linear(args.semantic_dim_size * self.args.codebook_size + self.args.id_dim_size, self.all_head_size)
-        self.key = nn.Linear(args.semantic_dim_size * self.args.codebook_size + self.args.id_dim_size, self.all_head_size)
-        self.value = nn.Linear(args.semantic_dim_size * self.args.codebook_size + self.args.id_dim_size, self.all_head_size)
+        self.query = nn.Linear(args.reshape_size, self.all_head_size)
+        self.key = nn.Linear(args.reshape_size, self.all_head_size)
+        self.value = nn.Linear(args.reshape_size, self.all_head_size)
 
         self.attn_dropout = nn.Dropout(args.attention_probs_dropout_prob)
 
         # 做完self-attention 做一个前馈全连接 LayerNorm 输出
-        self.dense = nn.Linear(args.hidden_size, args.semantic_dim_size * self.args.codebook_size + self.args.id_dim_size)
-        self.LayerNorm = LayerNorm(args.semantic_dim_size * self.args.codebook_size + self.args.id_dim_size, eps=1e-12)
+        self.dense = nn.Linear(args.hidden_size, args.reshape_size)
+        self.LayerNorm = LayerNorm(args.reshape_size, eps=1e-12)
         self.out_dropout = nn.Dropout(args.hidden_dropout_prob)
 
     def transpose_for_scores(self, x):
@@ -145,8 +145,8 @@ class Intermediate(nn.Module):
         else:
             self.intermediate_act_fn = args.hidden_act
 
-        self.dense_2 = nn.Linear(args.hidden_size * 4, args.semantic_dim_size * self.args.codebook_size + self.args.id_dim_size)
-        self.LayerNorm = LayerNorm(args.semantic_dim_size * self.args.codebook_size + self.args.id_dim_size, eps=1e-12)
+        self.dense_2 = nn.Linear(args.hidden_size * 4, args.reshape_size)
+        self.LayerNorm = LayerNorm(args.reshape_size, eps=1e-12)
         self.dropout = nn.Dropout(args.hidden_dropout_prob)
 
 
