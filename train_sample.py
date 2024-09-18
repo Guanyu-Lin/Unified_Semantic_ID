@@ -91,7 +91,7 @@ def main():
     args.item_size = max_item + 2
     args.user_size = max_user + 1
     args.mask_id = max_item + 1
-    args.max_seq_length_all = max_seq_length_all
+    args.max_seq_length_all = max_seq_length_all - 3
 
     # save model args
     args_str = f'{args.model_name}-{args.data_name}-{args.ckp}-{args.hidden_size}-{args.id_dim_size}-{args.semantic_dim_size}'

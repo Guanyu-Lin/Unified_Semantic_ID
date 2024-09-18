@@ -125,7 +125,7 @@ class SASRecDataset(Dataset):
         self.test_neg_items = test_neg_items
         self.data_type = data_type
         self.max_len = args.max_seq_length
-        self.max_len_all = args.max_seq_length_all - 3
+        self.max_len_all = args.max_seq_length_all
 
     def __getitem__(self, index):
 
