@@ -88,7 +88,7 @@ class S3RecModel(nn.Module):
 
         cluster_emb = []
         for sample, label, mask in zip(rq_item_embeddings, labels, all_attention_mask):
-            M = torch.zeros(self.args.codebook_size, sample.shape[0])
+            M = torch.zeros(self.args.codebook_size, sample.shape[0], device=sequence.device)
             M[label, torch.arange(sample.shape[0])] = 1
             M = (M.long() & mask.view(-1, 1, self.args.max_seq_length_all)).squeeze(0) # c, s
             cluster_mask.append(M)
