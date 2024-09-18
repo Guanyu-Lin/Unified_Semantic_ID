@@ -169,14 +169,15 @@ class S3RecModel(nn.Module):
         # cluster_mask = torch.ones(cluster_emb.shape[1])
         # extended_cluster_mask = attention_mask.view(-1, max_len, 1) & cluster_mask.view(-1, 1, cluster_emb.shape[1])
 
-
+        import pdb
+        pdb.set_trace()
         user_emb = self.user_embeddings(user_ids)
         item_encoded_layers = self.item_encoder(sequence_emb,
                                                 extended_attention_mask,
                                                 output_all_encoded_layers=True)
         
         item_encoded_layers_cluster = self.item_encoder_cluster(sequence_emb, cluster_emb,
-                                                extended_target2cluster_mask,
+                                                extended_target2cluster_mask.unsqueeze(1),
                                                 output_all_encoded_layers=True)
         
         # rq_loss_user, _, rq_user_embeddings = self.rq_model_user(item_encoded_layers[-1])

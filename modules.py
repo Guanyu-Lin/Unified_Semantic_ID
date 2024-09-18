@@ -116,9 +116,9 @@ class SelfAttention(nn.Module):
         # Apply the attention mask is (precomputed for all layers in BertModel forward() function)
         # [batch_size heads seq_len seq_len] scores
         # [batch_size 1 1 seq_len]
-        if input_tensor.shape[1] == 512:
-            import pdb
-            pdb.set_trace()
+        # if input_tensor.shape[1] == 512:
+        #     import pdb
+        #     pdb.set_trace()
         attention_scores = attention_scores + attention_mask
 
         # Normalize the attention scores to probabilities.
