@@ -199,6 +199,9 @@ class Encoder_Cluster(nn.Module):
                                     for _ in range(args.num_hidden_layers)])
 
     def forward(self, hidden_states, hidden_states_cluster, attention_mask, output_all_encoded_layers=True):
+        import pdb
+
+        pdb.set_trace()
         all_encoder_layers = []
         for layer_module in self.layer:
             hidden_states = layer_module(hidden_states, hidden_states_cluster, attention_mask)
