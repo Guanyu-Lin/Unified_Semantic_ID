@@ -92,11 +92,11 @@ class S3RecModel(nn.Module):
             M[label, torch.arange(sample.shape[0])] = 1
             M = (M.long() & mask.view(-1, 1, self.args.max_seq_length_all)).squeeze(0) # c, s
             cluster_mask.append(M)
-            # import pdb
-            # pdb.set_trace()
+    
             M = torch.nn.functional.normalize(M.float(), p=1, dim=1)
             cluster_emb.append(torch.mm(M, sample))
-
+        import pdb
+        pdb.set_trace()
         cluster_emb = torch.cat(cluster_emb, 0)
         cluster_mask = torch.cat(cluster_mask, 0)
 
