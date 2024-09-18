@@ -95,10 +95,10 @@ class S3RecModel(nn.Module):
     
             M = torch.nn.functional.normalize(M.float(), p=1, dim=1)
             cluster_emb.append(torch.mm(M, sample))
-        import pdb
-        pdb.set_trace()
-        cluster_emb = torch.cat(cluster_emb, 0)
-        cluster_mask = torch.cat(cluster_mask, 0)
+        # import pdb
+        # pdb.set_trace()
+        cluster_emb = torch.stack(cluster_emb, 0)
+        cluster_mask = torch.stack(cluster_mask, 0)
 
    
 
