@@ -139,7 +139,7 @@ class Intermediate(nn.Module):
     def __init__(self, args):
         super(Intermediate, self).__init__()
         self.args = args
-        self.dense_1 = nn.Linear(args.semantic_dim_size * args.codebook_size + args.id_dim_size, args.hidden_size * 4)
+        self.dense_1 = nn.Linear(args.reshape_size, args.hidden_size * 4)
         if isinstance(args.hidden_act, str):
             self.intermediate_act_fn = ACT2FN[args.hidden_act]
         else:
