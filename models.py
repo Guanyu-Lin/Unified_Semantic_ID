@@ -106,7 +106,7 @@ class S3RecModel(nn.Module):
 
 
     #
-    def add_position_embedding(self, sequence, all_ids):
+    def add_position_embedding(self, sequence):
 
         seq_length = sequence.size(1)
         position_ids = torch.arange(seq_length, dtype=torch.long, device=sequence.device)
@@ -114,7 +114,6 @@ class S3RecModel(nn.Module):
 
         text_item_embeddings = self.text_item_embeddings(sequence)
 
-        text_item_embeddings_all = self.text_item_embeddings(all_ids)
 
         rq_loss, rq_index, rq_item_embeddings = self.rq_model(text_item_embeddings)
 
