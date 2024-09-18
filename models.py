@@ -159,7 +159,7 @@ class S3RecModel(nn.Module):
 
         # sequence_text_emb = self.look_embedding(input_ids)
         # sequence_rq_emb = self.convert_rq_embedding(sequence_text_emb)
-        rq_loss_cluster, cluster_emb, cluster_mask = self.add_position_embedding_all(all_ids)
+        rq_loss_cluster, cluster_emb, cluster_mask = self.add_position_embedding_cluster(all_ids)
         rq_loss, sequence_emb = self.add_position_embedding(input_ids)
         cluster_mask = (torch.sum(cluster_mask, 2) > 0).long()
         # b, c
