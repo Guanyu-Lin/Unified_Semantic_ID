@@ -61,7 +61,7 @@ class S3RecModel(nn.Module):
         self.text_item_tensors = torch.load(args.data_dir + args.text_embedding_file)
         self.text_item_embeddings = nn.Embedding(self.args.item_size, 768, padding_idx=0).from_pretrained(torch.cat([self.text_item_tensors, torch.rand(1, 768)], 0))
 
-    def add_position_embedding_cluster(self, sequence):
+    def add_position_embedding_cluster(self, sequence, all_attention_mask):
 
         seq_length = sequence.size(1)
         position_ids = torch.arange(seq_length, dtype=torch.long, device=sequence.device)
@@ -87,9 +87,10 @@ class S3RecModel(nn.Module):
         cluster_mask = []
 
         cluster_emb = []
-        for sample, label in zip(rq_item_embeddings, labels):
+        for sample, label, mask in zip(rq_item_embeddings, labels, all_attention_mask):
             M = torch.zeros(self.args.codebook_size, sample.shape[0])
             M[label, torch.arange(sample.shape[0])] = 1
+            M = M & mask.view(-1, 1, self.args.max_seq_length_all) # b, s, c
             cluster_mask.append(M)
 
             M = torch.nn.functional.normalize(M, p=1, dim=1)
@@ -135,7 +136,7 @@ class S3RecModel(nn.Module):
     def finetune(self, input_ids, all_ids, user_ids):
 
         attention_mask = (input_ids > 0).long()
-        # all_attention_mask = (all_ids > 0).long()
+        all_attention_mask = (all_ids > 0).long()
         extended_attention_mask = attention_mask.unsqueeze(1).unsqueeze(2) # torch.int64
 
         max_len = attention_mask.size(-1)
@@ -159,7 +160,7 @@ class S3RecModel(nn.Module):
 
         # sequence_text_emb = self.look_embedding(input_ids)
         # sequence_rq_emb = self.convert_rq_embedding(sequence_text_emb)
-        rq_loss_cluster, cluster_emb, cluster_mask = self.add_position_embedding_cluster(all_ids)
+        rq_loss_cluster, cluster_emb, cluster_mask = self.add_position_embedding_cluster(all_ids, all_attention_mask)
         rq_loss, sequence_emb = self.add_position_embedding(input_ids)
         cluster_mask = (torch.sum(cluster_mask, 2) > 0).long()
         # b, c
