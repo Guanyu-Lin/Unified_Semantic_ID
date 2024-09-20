@@ -4,7 +4,7 @@
 #SBATCH --nodes=1
 #SBATCH --cpus-per-task=2
 ##SBATCH --mem-per-cpu=1GB
-#SBATCH --job-name="plug"
+#SBATCH --job-name="cluster"
 ##SBATCH --partition=secondary
 #SBATCH --partition=eng-research-gpu
 ##SBATCH --partition=IllinoisComputes-GPU
@@ -21,8 +21,4 @@
 
 
 echo "hello from S$SLURM JOB ID"
-python train_sample.py --hidden_size 64 --codebook_size 3 --semantic_dim_size 32 --id_dim_size 64 --reshape_size 64 --codebook_size 512 --is_cos --rq_loss_weight 0.1
-python train_sample.py --hidden_size 64 --codebook_size 3 --semantic_dim_size 32 --id_dim_size 64 --reshape_size 64 --codebook_size 512 --is_cos --rq_loss_weight 10
-python train_sample.py --hidden_size 64 --codebook_size 3 --semantic_dim_size 32 --id_dim_size 64 --reshape_size 64 --codebook_size 1024 --is_cos --rq_loss_weight 0.1
-python train_sample.py --hidden_size 64 --codebook_size 3 --semantic_dim_size 32 --id_dim_size 64 --reshape_size 64 --codebook_size 1024 --is_cos --rq_loss_weight 10
-python train_sample.py --hidden_size 64 --codebook_size 3 --semantic_dim_size 32 --id_dim_size 64 --reshape_size 64 --codebook_size 1024 --is_cos --rq_loss_weight 1
+python train_sample.py --hidden_size 64 --codebook_size 3 --semantic_dim_size 32 --id_dim_size 64 --reshape_size 64 --codebook_size 512 --is_cos --rq_loss_weight 1
