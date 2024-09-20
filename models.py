@@ -18,6 +18,7 @@ class S3RecModel(nn.Module):
         super(S3RecModel, self).__init__()
         self.args = args
 
+        
 
         self.unique_item_embeddings = nn.Embedding(self.args.item_size, self.args.id_dim_size, padding_idx=0)
         self.user_embeddings = nn.Embedding(self.args.user_size, self.args.id_dim_size, padding_idx=0)
@@ -43,7 +44,7 @@ class S3RecModel(nn.Module):
         )
 
         self.rq_model_user = RqVae(
-            input_dim=args.reshape_size,
+            input_dim=768,
             embed_dim=args.semantic_dim_size,
             hidden_dim=256,
             codebook_size=args.codebook_size,
@@ -56,10 +57,14 @@ class S3RecModel(nn.Module):
         self.dropout = nn.Dropout(args.hidden_dropout_prob)
 
         self.criterion = nn.BCELoss(reduction='none')
-        self.apply(self.init_weights)
+        if not(self.args.is_text):
+            self.text_item_embeddings = nn.Embedding(self.args.item_size, 768, padding_idx=0)
 
-        self.text_item_tensors = torch.load(args.data_dir + args.text_embedding_file)
-        self.text_item_embeddings = nn.Embedding(self.args.item_size, 768, padding_idx=0).from_pretrained(torch.cat([self.text_item_tensors, torch.rand(1, 768)], 0))
+
+        self.apply(self.init_weights)
+        if self.args.is_text:
+            self.text_item_tensors = torch.load(args.data_dir + args.text_embedding_file)
+            self.text_item_embeddings = nn.Embedding(self.args.item_size, 768, padding_idx=0).from_pretrained(torch.cat([self.text_item_tensors, torch.rand(1, 768)], 0))
 
     def add_position_embedding_cluster(self, sequence, all_attention_mask):
 

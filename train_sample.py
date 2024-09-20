@@ -49,6 +49,7 @@ def main():
     parser.add_argument('--w', type=float, default=1)
     parser.add_argument('--rq_loss_weight', type=float, default=1)
     parser.add_argument('--is_cos', action='store_true')
+    parser.add_argument('--is_text', action='store_true')
 
     # train args
     parser.add_argument("--lr", type=float, default=0.001, help="learning rate of adam")
