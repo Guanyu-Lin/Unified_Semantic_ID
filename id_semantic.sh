@@ -21,6 +21,6 @@
 
 
 echo "hello from S$SLURM JOB ID"
-python train_sample.py --hidden_size 64 --codebook_size 3 --semantic_dim_size 32 --id_dim_size 64 --reshape_size 64 --codebook_size 512 --is_cos --rq_loss_weight 1 --is_text --distance_type "hybrid"
-python train_sample.py --hidden_size 64 --codebook_size 3 --semantic_dim_size 32 --id_dim_size 64 --reshape_size 64 --codebook_size 512 --is_cos --rq_loss_weight 1 --is_text --distance_type "hybrid" --is_cluster
-python train_sample.py --hidden_size 64 --codebook_size 3 --semantic_dim_size 32 --id_dim_size 64 --reshape_size 64 --codebook_size 512 --is_cos --rq_loss_weight 1 --is_text --distance_type "Cosine" --is_cluster
+python train_sample.py --hidden_size 64 --codebook_size 3 --semantic_dim_size 32 --id_dim_size 64 --reshape_size 64 --codebook_size 512 --rq_loss_weight 1 --is_text --distance_type "hybrid"
+python train_sample.py --hidden_size 64 --codebook_size 3 --semantic_dim_size 32 --id_dim_size 64 --reshape_size 64 --codebook_size 512 --rq_loss_weight 1 --is_text --distance_type "hybrid" --is_cluster
+python train_sample.py --hidden_size 64 --codebook_size 3 --semantic_dim_size 32 --id_dim_size 64 --reshape_size 64 --codebook_size 512 --rq_loss_weight 1 --is_text --distance_type "Cosine" --is_cluster

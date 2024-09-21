@@ -51,8 +51,8 @@ class S3RecModel(nn.Module):
             hidden_dim=256,
             codebook_size=args.codebook_size,
             n_layers=args.codebook_n_layer,
+            distance_type=args.distance_type,
             loss_weight=args.w,
-            is_cos=True,
             reshape_dim = args.reshape_size
         )
 
