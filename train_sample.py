@@ -96,7 +96,11 @@ def main():
     args.max_seq_length_all = max_seq_length_all - 3
 
     # save model args
-    args_str = f'{args.model_name}-{args.data_name}-{args.ckp}-{args.hidden_size}-{args.id_dim_size}-{args.semantic_dim_size}'
+    cluster_str = "no_cluster"
+    if args.is_cluster:
+        cluster_str = "cluster"
+
+    args_str = f'{args.model_name}-{args.data_name}-{args.ckp}-{args.hidden_size}-{args.id_dim_size}-{args.semantic_dim_size}-{args.distance_type}-{cluster_str}'
     args.log_file = os.path.join(args.output_dir, args_str + '.txt')
     print(str(args))
     with open(args.log_file, 'a') as f:
