@@ -23,7 +23,7 @@ echo "hello from S$SLURM JOB ID"
 # python train_sample.py --embedding_type 'concat_reshape' --hidden_size 64 --codebook_size 3 --semantic_dim_size 32 --id_dim_size 64 --reshape_size 64 --attribute_size 512
 # python train_sample.py --embedding_type 'concat_reshape' --hidden_size 64 --codebook_size 3 --semantic_dim_size 32 --id_dim_size 64 --reshape_size 64 --attribute_size 1024
 # python train_sample.py --hidden_size 64 --codebook_size 3 --semantic_dim_size 32 --id_dim_size 64 --reshape_size 64 --codebook_size 512 --is_cos
-python train_sample.py --hidden_size 64 --codebook_size 3 --semantic_dim_size 32 --id_dim_size 64 --reshape_size 64 --codebook_size 512 --is_cos --rq_loss_weight 1 --is_text
-python train_sample.py --hidden_size 64 --codebook_size 3 --semantic_dim_size 32 --id_dim_size 64 --reshape_size 64 --codebook_size 512 --is_cos --rq_loss_weight 1
+python train_sample.py --hidden_size 64 --codebook_size 3 --semantic_dim_size 32 --id_dim_size 64 --reshape_size 64 --codebook_size 512 --is_cos --rq_loss_weight 1 --is_text --distance_type "hybrid"
+python train_sample.py --hidden_size 64 --codebook_size 3 --semantic_dim_size 32 --id_dim_size 64 --reshape_size 64 --codebook_size 512 --is_cos --rq_loss_weight 1 --is_text --distance_type "hybrid" --is_cluster
 # python train_sample.py --embedding_type 'add_reshape' --hidden_size 64 --codebook_size 3 --semantic_dim_size 32 --id_dim_size 64 --reshape_size 64 --attribute_size 1024
 

@@ -39,9 +39,11 @@ class S3RecModel(nn.Module):
             codebook_size=args.codebook_size,
             n_layers=args.codebook_n_layer,
             loss_weight=args.w,
-            is_cos=True,
+            distance_type=args.distance_type,
+            is_cluster=args.is_cluster,
             reshape_dim = args.reshape_size
         )
+
 
         self.rq_model_user = RqVae(
             input_dim=768,

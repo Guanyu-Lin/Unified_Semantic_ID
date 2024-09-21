@@ -48,7 +48,8 @@ def main():
 
     parser.add_argument('--w', type=float, default=1)
     parser.add_argument('--rq_loss_weight', type=float, default=1)
-    parser.add_argument('--is_cos', action='store_true')
+    parser.add_argument('--distance_type', default="hybrid", type=str)
+    parser.add_argument('--is_cluster', action='store_true')
     parser.add_argument('--is_text', action='store_true')
 
     # train args

@@ -28,7 +28,8 @@ class RqVae(nn.Module):
         loss_weight: float = 10.0,
         n_res_block: int = 2,
         n_res_channel: int = 32,
-        is_cos: bool = False,
+        distance_type: str = "Cosine",
+        is_cluster: bool = False,
         reshape_dim = 64
     ) -> None:
         super().__init__()
@@ -40,13 +41,38 @@ class RqVae(nn.Module):
         self.codebook_size = codebook_size
         self.commitment_weight = commitment_weight
         self.loss_weight = loss_weight
+        self.is_cluster = is_cluster
+        self.distance_type = distance_type
+        addional_n_layer = 0
+        if self.is_cluster:
+            self.rvq_cluster = ResidualVQ(
+                dim = self.embed_dim,
+                codebook_size = 50,
+                num_quantizers = 1,
+                kmeans_init = True,   # set to True
+                use_cosine_sim = True,
+                kmeans_iters = 100,     # number of kmeans iterations to calculate the centroids for the codebook on init
+                threshold_ema_dead_code=2
+            )
+            # addional_n_layer += 1
+        if self.distance_type == "hybrid":
+            self.rvq_Euclidean = ResidualVQ(
+                dim = self.embed_dim,
+                codebook_size = self.codebook_size,
+                num_quantizers = 1,
+                kmeans_init = True,   # set to True
+                use_cosine_sim = False,
+                kmeans_iters = 100,     # number of kmeans iterations to calculate the centroids for the codebook on init
+                threshold_ema_dead_code=2
+            )
+            addional_n_layer += 1
 
         self.rvq = ResidualVQ(
             dim = self.embed_dim,
             codebook_size = self.codebook_size,
-            num_quantizers = self.n_layers,
+            num_quantizers = self.n_layers - addional_n_layer,
             kmeans_init = True,   # set to True
-            use_cosine_sim = is_cos,
+            use_cosine_sim = True,
             kmeans_iters = 100,     # number of kmeans iterations to calculate the centroids for the codebook on init
             threshold_ema_dead_code=2
         )
@@ -86,7 +112,30 @@ class RqVae(nn.Module):
         res = self.encode(x)
 
         # embs, residuals, sem_ids = [], [], []
-        embs, sem_ids, commit_loss = self.rvq(res)
+        rq_embs = None
+        rq_semantic_id = []
+        rq_loss = 0
+        if self.is_cluster:
+            embs_cluster, sem_ids_cluster, commit_loss_cluster = self.rvq_cluster(res)
+            rq_embs = embs_cluster
+            rq_loss += commit_loss_cluster
+            rq_semantic_id.append(sem_ids_cluster)
+
+        embs, sem_ids, commit_loss = self.rvq(res - embs_cluster)
+        rq_loss += commit_loss
+        rq_semantic_id.append(sem_ids)
+
+
+        if rq_embs:
+            rq_embs += embs
+        else:
+            rq_embs = embs
+            
+        if self.distance_type == "hybrid":
+            embs_Euclidean, sem_ids_Euclidean, commit_loss_Euclidean = self.rvq_Euclidean(res - embs_cluster - embs)
+            rq_embs += embs_Euclidean
+            rq_loss += commit_loss_Euclidean
+            rq_semantic_id.append(sem_ids_Euclidean)
 
         # for layer in self.layers:
         #     residuals.append(res)
@@ -95,11 +144,11 @@ class RqVae(nn.Module):
         #     res = res - emb
         #     sem_ids.append(id)
         #     embs.append(emb)
-
+        rq_semantic_id = torch.cat(rq_semantic_id, -1)
         return RqVaeOutput(
-            embeddings=embs,
-            sem_ids=sem_ids,
-            commit_loss = commit_loss,
+            embeddings=rq_embs,
+            sem_ids=rq_semantic_id,
+            commit_loss = rq_loss,
         )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
