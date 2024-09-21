@@ -114,27 +114,26 @@ class RqVae(nn.Module):
         # embs, residuals, sem_ids = [], [], []
         rq_embs = None
         rq_semantic_id = []
-        rq_loss = 0
+        rq_loss = []
         if self.is_cluster:
             embs_cluster, sem_ids_cluster, commit_loss_cluster = self.rvq_cluster(res)
             rq_embs = embs_cluster
-            rq_loss += commit_loss_cluster
+            rq_loss.append(commit_loss_cluster)
             rq_semantic_id.append(sem_ids_cluster)
 
-        embs, sem_ids, commit_loss = self.rvq(res - embs_cluster)
-        rq_loss += commit_loss
+            embs, sem_ids, commit_loss = self.rvq(res - embs_cluster)
+            rq_embs += embs
+        else:
+            embs, sem_ids, commit_loss = self.rvq(res)
+            rq_embs = embs
+        rq_loss.append(commit_loss)
         rq_semantic_id.append(sem_ids)
 
 
-        if rq_embs:
-            rq_embs += embs
-        else:
-            rq_embs = embs
-            
         if self.distance_type == "hybrid":
             embs_Euclidean, sem_ids_Euclidean, commit_loss_Euclidean = self.rvq_Euclidean(res - embs_cluster - embs)
             rq_embs += embs_Euclidean
-            rq_loss += commit_loss_Euclidean
+            rq_loss.append(commit_loss_Euclidean)
             rq_semantic_id.append(sem_ids_Euclidean)
 
         # for layer in self.layers:
@@ -145,6 +144,7 @@ class RqVae(nn.Module):
         #     sem_ids.append(id)
         #     embs.append(emb)
         rq_semantic_id = torch.cat(rq_semantic_id, -1)
+        rq_loss = torch.cat(rq_loss, -1)
         return RqVaeOutput(
             embeddings=rq_embs,
             sem_ids=rq_semantic_id,
