@@ -131,7 +131,7 @@ class RqVae(nn.Module):
 
 
         if self.distance_type == "hybrid":
-            embs_Euclidean, sem_ids_Euclidean, commit_loss_Euclidean = self.rvq_Euclidean(res - embs_cluster - embs)
+            embs_Euclidean, sem_ids_Euclidean, commit_loss_Euclidean = self.rvq_Euclidean(res - rq_embs)
             rq_embs += embs_Euclidean
             rq_loss.append(commit_loss_Euclidean)
             rq_semantic_id.append(sem_ids_Euclidean)
