@@ -21,7 +21,7 @@ def main():
     parser.add_argument('--data_dir', default='../seqRec/data/', type=str)
     parser.add_argument('--output_dir', default='output/', type=str)
     parser.add_argument('--data_name', default='Beauty', type=str)
-    parser.add_argument('--embedding_type', default='id', type=str)
+    parser.add_argument('--only_semantic', action='store_true')
     parser.add_argument('--text_embedding_file', default='Beautytext_emb.pt', type=str)
 
     parser.add_argument('--semantic_name', default='Beauty132cosidToSemanticId.json', type=str)
@@ -109,9 +109,6 @@ def main():
     args.item2attribute = item2attribute
     args.attribute2item = attribute2item
 
-    semantic_dataset = SemanticDataset(args, item2attribute, data_type='initialize')
-    # train_sampler = RandomSampler(train_dataset)
-    semantic_dataloader = DataLoader(semantic_dataset, batch_size=args.batch_size)
 
     # save model
     checkpoint = args_str + '.pt'
@@ -129,19 +126,6 @@ def main():
     test_sampler = SequentialSampler(test_dataset)
     test_dataloader = DataLoader(test_dataset, sampler=test_sampler, batch_size=args.batch_size)
 
-
-
-    # train_dataset = SASRecDataset(args, user_seq, data_type='train')
-    # train_sampler = RandomSampler(train_dataset)
-    # train_dataloader = DataLoader(train_dataset, sampler=train_sampler, batch_size=args.batch_size)
-
-    # eval_dataset = SASRecDataset(args, user_seq, data_type='valid')
-    # eval_sampler = SequentialSampler(eval_dataset)
-    # eval_dataloader = DataLoader(eval_dataset, sampler=eval_sampler, batch_size=args.batch_size)
-
-    # test_dataset = SASRecDataset(args, user_seq, data_type='test')
-    # test_sampler = SequentialSampler(test_dataset)
-    # test_dataloader = DataLoader(test_dataset, sampler=test_sampler, batch_size=args.batch_size)
 
 
 

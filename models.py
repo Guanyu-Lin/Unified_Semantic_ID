@@ -19,8 +19,8 @@ class S3RecModel(nn.Module):
         self.args = args
 
         
-
-        self.unique_item_embeddings = nn.Embedding(self.args.item_size, self.args.id_dim_size, padding_idx=0)
+        if not(self.args.only_semantic):
+            self.unique_item_embeddings = nn.Embedding(self.args.item_size, self.args.id_dim_size, padding_idx=0)
         self.user_embeddings = nn.Embedding(self.args.user_size, self.args.id_dim_size, padding_idx=0)
 
         self.position_embeddings = nn.Embedding(args.max_seq_length, args.reshape_size)
@@ -80,9 +80,12 @@ class S3RecModel(nn.Module):
         rq_loss, rq_index, rq_item_embeddings = self.rq_model(text_item_embeddings)
 
         labels = rq_index[:, :, 0]
+        if self.args.only_semantic:
+            item_embeddings = rq_item_embeddings
+        else:
+            unique_item_embeddings = self.unique_item_embeddings(sequence)
+            item_embeddings = rq_item_embeddings + unique_item_embeddings
 
-        unique_item_embeddings = self.unique_item_embeddings(sequence)
-        item_embeddings = rq_item_embeddings + unique_item_embeddings
         position_embeddings = self.position_embeddings_all(position_ids)
         sequence_emb = item_embeddings + position_embeddings
         # # import pdb
@@ -124,9 +127,12 @@ class S3RecModel(nn.Module):
 
         rq_loss, rq_index, rq_item_embeddings = self.rq_model(text_item_embeddings)
 
-
-        unique_item_embeddings = self.unique_item_embeddings(sequence)
-        item_embeddings = rq_item_embeddings + unique_item_embeddings
+        if self.args.only_semantic:
+            item_embeddings = rq_item_embeddings
+        else:
+            unique_item_embeddings = self.unique_item_embeddings(sequence)
+            item_embeddings = rq_item_embeddings + unique_item_embeddings
+            
         position_embeddings = self.position_embeddings(position_ids)
         sequence_emb = item_embeddings + position_embeddings
 

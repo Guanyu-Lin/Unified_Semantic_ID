@@ -94,14 +94,17 @@ class Trainer:
 
         text_pos_emb = self.model.text_item_embeddings(pos_ids)
         _, _, rq_pos_emb = self.model.rq_model(text_pos_emb)
-        unique_pos_emb = self.model.unique_item_embeddings(pos_ids)
-        pos_emb = rq_pos_emb + unique_pos_emb
-
         text_neg_emb = self.model.text_item_embeddings(neg_ids)
-
         _, _, rq_neg_emb = self.model.rq_model(text_neg_emb)
-        unique_neg_emb = self.model.unique_item_embeddings(neg_ids)
-        neg_emb = rq_neg_emb + unique_neg_emb
+
+        if self.args.only_semantic:
+            pos_emb = rq_pos_emb
+            pos_emb = rq_neg_emb
+        else:
+            unique_pos_emb = self.model.unique_item_embeddings(pos_ids)
+            pos_emb = rq_pos_emb + unique_pos_emb
+            unique_neg_emb = self.model.unique_item_embeddings(neg_ids)
+            neg_emb = rq_neg_emb + unique_neg_emb
 
         # [batch*seq_len hidden_size]
         pos = pos_emb.view(-1, pos_emb.size(2))
@@ -122,29 +125,14 @@ class Trainer:
         # [batch 100 hidden_size]
         text_item_embeddings = self.model.text_item_embeddings(test_neg_sample)
         _, _, rq_item_emb = self.model.rq_model(text_item_embeddings)
-        unique_item_embeddings = self.model.unique_item_embeddings(test_neg_sample)
-        test_item_emb = rq_item_emb + unique_item_embeddings
+        if self.args.only_semantic:
+            test_item_emb = rq_item_emb
+        else:
+            unique_item_embeddings = self.model.unique_item_embeddings(test_neg_sample)
+            test_item_emb = rq_item_emb + unique_item_embeddings
         # [batch hidden_size]
         test_logits = torch.bmm(test_item_emb, seq_out.unsqueeze(-1)).squeeze(-1)  # [B 100]
         return test_logits
-
-    def predict_full(self, seq_out):
-        # [item_num hidden_size]
-
-        if self.args.embedding_type == "id":
-            test_item_emb = self.model.unique_item_embeddings.weight
-        elif self.args.embedding_type == "semantic_id_concat":
-            test_item_emb = torch.cat([self.model.item_embeddings.weight, self.model.unique_item_embeddings.weight], -1)
-        elif self.args.embedding_type == "concat_reshape":
-            test_item_emb = self.model.reshape_input(torch.cat([self.model.item_embeddings.weight, self.model.unique_item_embeddings.weight], -1))
-        elif self.args.embedding_type == "add_reshape":
-            test_item_emb = self.model.reshape_input(self.model.item_embeddings.weight) + self.model.unique_item_embeddings.weight
-        else:
-            test_item_emb = self.model.item_embeddings.weight
-        # test_item_emb = self.model.item_embeddings.weight
-        # [batch hidden_size ]
-        rating_pred = torch.matmul(seq_out, test_item_emb.transpose(0, 1))
-        return rating_pred
 
 
 class FinetuneTrainer(Trainer):
@@ -292,12 +280,12 @@ class Initializer(Trainer):
                                   bar_format="{l_bar}{r_bar}")
 
         self.model.eval()
-        for i, batch in rec_data_iter:
-            # 0. batch_data will be sent into the device(GPU or cpu)
-            batch = tuple(t.to(self.device) for t in batch)
-            semantic_ids, = batch
-            if not(self.args.embedding_type == "id"):
-                self.model.look_up_embedding(semantic_ids)
-        if not(self.args.embedding_type == "id"):
-            self.model.concate_embedding(self.device)
+        # for i, batch in rec_data_iter:
+        #     # 0. batch_data will be sent into the device(GPU or cpu)
+        #     batch = tuple(t.to(self.device) for t in batch)
+        #     semantic_ids, = batch
+        #     if not(self.args.embedding_type == "id"):
+        #         self.model.look_up_embedding(semantic_ids)
+        # if not(self.args.embedding_type == "id"):
+        #     self.model.concate_embedding(self.device)
         # return self.get_full_sort_score(epoch, answer_list, pred_list)
