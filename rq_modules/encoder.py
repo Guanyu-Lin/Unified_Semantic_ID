@@ -28,13 +28,9 @@ class MLP(nn.Module):
         self.mlp = nn.Sequential(
             nn.Linear(input_dim, hidden_dim * 2),
             nn.ReLU(),
-            nn.LayerNorm(hidden_dim * 2),
             nn.Linear(hidden_dim * 2, hidden_dim),
             nn.ReLU(),
-            nn.LayerNorm(hidden_dim),
-            nn.Linear(hidden_dim, out_dim),
-            nn.ReLU(),
-            L2NormalizationLayer() if normalize else nn.Identity()
+            nn.Linear(hidden_dim, out_dim)
         )
         
         # self.mlp = nn.Sequential(

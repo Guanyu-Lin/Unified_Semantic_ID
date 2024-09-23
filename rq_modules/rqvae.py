@@ -30,7 +30,8 @@ class RqVae(nn.Module):
         n_res_channel: int = 32,
         distance_type: str = "Cosine",
         is_cluster: bool = False,
-        reshape_dim = 64
+        reshape_dim = 64,
+        is_reconstruction = False
     ) -> None:
         super().__init__()
 
@@ -43,6 +44,7 @@ class RqVae(nn.Module):
         self.loss_weight = loss_weight
         self.is_cluster = is_cluster
         self.distance_type = distance_type
+        self.is_reconstruction = is_reconstruction
         addional_n_layer = 0
         if self.is_cluster:
             self.rvq_cluster = ResidualVQ(
@@ -66,16 +68,16 @@ class RqVae(nn.Module):
                 threshold_ema_dead_code=2
             )
             addional_n_layer += 1
-
-        self.rvq = ResidualVQ(
-            dim = self.embed_dim,
-            codebook_size = self.codebook_size,
-            num_quantizers = self.n_layers - addional_n_layer,
-            kmeans_init = True,   # set to True
-            use_cosine_sim = True,
-            kmeans_iters = 100,     # number of kmeans iterations to calculate the centroids for the codebook on init
-            threshold_ema_dead_code=2
-        )
+        if self.n_layers - addional_n_layer > 0:
+            self.rvq = ResidualVQ(
+                dim = self.embed_dim,
+                codebook_size = self.codebook_size,
+                num_quantizers = self.n_layers - addional_n_layer,
+                kmeans_init = True,   # set to True
+                use_cosine_sim = True,
+                kmeans_iters = 100,     # number of kmeans iterations to calculate the centroids for the codebook on init
+                threshold_ema_dead_code=2
+            )
         # self.layers = nn.ModuleList(modules=[
         #     Quantize(embed_dim=embed_dim // 2, n_embed=codebook_size)
         #     for _ in range(n_layers)
@@ -94,7 +96,7 @@ class RqVae(nn.Module):
            
         self.decoder_rec = Decode_MLP(input_dim=embed_dim,
             hidden_dim=hidden_dim,
-            out_dim=reshape_dim)
+            out_dim=reshape_dim, shallow=True)
 
 
 
@@ -120,19 +122,30 @@ class RqVae(nn.Module):
             rq_embs = embs_cluster
             rq_loss.append(commit_loss_cluster)
             rq_semantic_id.append(sem_ids_cluster)
-
-            embs, sem_ids, commit_loss = self.rvq(res - embs_cluster)
-            rq_embs += embs
-        else:
-            embs, sem_ids, commit_loss = self.rvq(res)
+            # embs, sem_ids, commit_loss = self.rvq(res - embs_cluster)
+            # rq_embs += embs
+            # rq_loss.append(commit_loss)
+            # rq_semantic_id.append(sem_ids)
+            
+        if (self.distance_type == "hybrid" and self.n_layers > 1) or (not(self.distance_type == "hybrid")):
+            if rq_embs is not None:
+                embs, sem_ids, commit_loss = self.rvq(res - rq_embs)
+                rq_embs += embs
+            else:
+                embs, sem_ids, commit_loss = self.rvq(res)
+                rq_embs = embs
             rq_embs = embs
-        rq_loss.append(commit_loss)
-        rq_semantic_id.append(sem_ids)
+            rq_loss.append(commit_loss)
+            rq_semantic_id.append(sem_ids)
 
 
         if self.distance_type == "hybrid":
-            embs_Euclidean, sem_ids_Euclidean, commit_loss_Euclidean = self.rvq_Euclidean(res - rq_embs)
-            rq_embs += embs_Euclidean
+            if rq_embs is not None:
+                embs_Euclidean, sem_ids_Euclidean, commit_loss_Euclidean = self.rvq_Euclidean(res - rq_embs)
+                rq_embs += embs_Euclidean
+            else:
+                embs_Euclidean, sem_ids_Euclidean, commit_loss_Euclidean = self.rvq_Euclidean(res)
+                rq_embs = embs_Euclidean
             rq_loss.append(commit_loss_Euclidean)
             rq_semantic_id.append(sem_ids_Euclidean)
 
@@ -151,16 +164,16 @@ class RqVae(nn.Module):
             commit_loss = rq_loss,
         )
 
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
+    def forward(self, x: torch.Tensor, stop = False) -> torch.Tensor:
         quantized = self.get_semantic_ids(x)
         embs, sem_ids, rqvae_loss = quantized.embeddings, quantized.sem_ids, quantized.commit_loss
         # import pdb
         # pdb.set_trace()
-        x_hat = self.decode(embs)
-        
-        reconstuction_loss = ReconstuctionLoss()(x_hat, x)
-        # rqvae_loss = RqVaeLoss(self.commitment_weight)(residuals, embs)
-        # rqvae_loss = rqvae_loss.mean(-1)
-        loss = (reconstuction_loss.mean() + self.loss_weight * rqvae_loss.sum())
+        if self.is_reconstruction:
+            x_hat = self.decode(embs)
+            reconstuction_loss = ReconstuctionLoss()(x_hat, x)
+            loss = (reconstuction_loss.mean() + self.loss_weight * rqvae_loss.sum())
 
-        return loss, sem_ids, self.decoder_rec(embs)
+        else:
+            loss = (self.loss_weight * rqvae_loss.sum())
+        return loss, sem_ids, embs

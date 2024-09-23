@@ -99,12 +99,12 @@ class Trainer:
 
         if self.args.only_semantic:
             pos_emb = rq_pos_emb
-            pos_emb = rq_neg_emb
+            neg_emb = rq_neg_emb
         else:
             unique_pos_emb = self.model.unique_item_embeddings(pos_ids)
-            pos_emb = rq_pos_emb + unique_pos_emb
+            pos_emb = torch.cat([rq_pos_emb, unique_pos_emb], -1)
             unique_neg_emb = self.model.unique_item_embeddings(neg_ids)
-            neg_emb = rq_neg_emb + unique_neg_emb
+            neg_emb = torch.cat([rq_neg_emb, unique_neg_emb], -1)
 
         # [batch*seq_len hidden_size]
         pos = pos_emb.view(-1, pos_emb.size(2))
@@ -120,17 +120,18 @@ class Trainer:
         ) / torch.sum(istarget)
 
         return loss
+        # return 0
 
     def predict_sample(self, seq_out, test_neg_sample):
         # [batch 100 hidden_size]
         text_item_embeddings = self.model.text_item_embeddings(test_neg_sample)
-        _, _, rq_item_emb = self.model.rq_model(text_item_embeddings)
+        _, _, rq_item_emb = self.model.rq_model(text_item_embeddings, True)
         if self.args.only_semantic:
             test_item_emb = rq_item_emb
         else:
             unique_item_embeddings = self.model.unique_item_embeddings(test_neg_sample)
-            test_item_emb = rq_item_emb + unique_item_embeddings
-        # [batch hidden_size]
+            test_item_emb =  torch.cat([rq_item_emb, unique_item_embeddings], -1)
+
         test_logits = torch.bmm(test_item_emb, seq_out.unsqueeze(-1)).squeeze(-1)  # [B 100]
         return test_logits
 
@@ -223,6 +224,7 @@ class FinetuneTrainer(Trainer):
                     batch_pred_list = ind[np.arange(len(rating_pred))[:, None], arr_ind_argsort]
 
                     if i == 0:
+
                         pred_list = batch_pred_list
                         answer_list = answers.cpu().data.numpy()
                     else:
@@ -242,6 +244,7 @@ class FinetuneTrainer(Trainer):
                     test_logits = self.predict_sample(recommend_output, test_neg_items)
                     test_logits = test_logits.cpu().detach().numpy().copy()
                     if i == 0:
+
                         pred_list = test_logits
                     else:
                         pred_list = np.append(pred_list, test_logits, axis=0)

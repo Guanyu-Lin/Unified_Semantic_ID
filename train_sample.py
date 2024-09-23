@@ -22,7 +22,7 @@ def main():
     parser.add_argument('--output_dir', default='output/', type=str)
     parser.add_argument('--data_name', default='Beauty', type=str)
     parser.add_argument('--only_semantic', action='store_true')
-    parser.add_argument('--text_embedding_file', default='Beautytext_emb.pt', type=str)
+    parser.add_argument('--text_embedding_file', default='text_emb.pt', type=str)
 
     parser.add_argument('--semantic_name', default='Beauty132cosidToSemanticId.json', type=str)
 
@@ -51,6 +51,7 @@ def main():
     parser.add_argument('--distance_type', default="hybrid", type=str)
     parser.add_argument('--is_cluster', action='store_true')
     parser.add_argument('--is_text', action='store_true')
+    parser.add_argument('--is_reconstruction', action='store_true')
 
     # train args
     parser.add_argument("--lr", type=float, default=0.001, help="learning rate of adam")
@@ -69,6 +70,7 @@ def main():
 
     set_seed(args.seed)
     check_path(args.output_dir)
+    args.text_embedding_file =  args.data_name + 'text_emb.pt'
     args.code_embedding_file = args.data_name + str(args.codebook_size) + str(1.0) + str(32) + 'cos.pt'
     args.semantic_name = args.data_name + str(args.codebook_size) + str(1.0) + str(32) + "cosidToSemanticId.json"
 
@@ -87,8 +89,8 @@ def main():
     user_seq, max_item, max_user, max_seq_length_all, sample_seq = \
         get_user_seqs_and_sample(args.data_file, args.sample_file)
 
-    attribute2item, item2attribute, codebook_size = get_item2attribute_json(item2attribute_file, args.codebook_size)
-    print("semantic_num", len(attribute2item))
+    # attribute2item, item2attribute, codebook_size = get_item2attribute_json(item2attribute_file, args.codebook_size)
+    # print("semantic_num", len(attribute2item))
 
     args.item_size = max_item + 2
     args.user_size = max_user + 1
@@ -99,15 +101,17 @@ def main():
     cluster_str = "no_cluster"
     if args.is_cluster:
         cluster_str = "cluster"
-
-    args_str = f'{args.model_name}-{args.data_name}-{args.ckp}-{args.hidden_size}-{args.id_dim_size}-{args.semantic_dim_size}-{args.distance_type}-{cluster_str}'
+    reconstruction_str = "no_reconstruction"
+    if args.is_reconstruction:
+        reconstruction_str = "reconstruction"
+    args_str = f'{args.model_name}-{args.data_name}-{args.id_dim_size}-{args.codebook_n_layer}-{args.codebook_size}-{args.semantic_dim_size}-{args.distance_type}-{reconstruction_str}-{cluster_str}'
     args.log_file = os.path.join(args.output_dir, args_str + '.txt')
     print(str(args))
     with open(args.log_file, 'a') as f:
         f.write(str(args) + '\n')
 
-    args.item2attribute = item2attribute
-    args.attribute2item = attribute2item
+    # args.item2attribute = item2attribute
+    # args.attribute2item = attribute2item
 
 
     # save model

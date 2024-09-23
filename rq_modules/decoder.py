@@ -17,7 +17,8 @@ class Decode_MLP(nn.Module):
         input_dim: int,
         hidden_dim: int,
         out_dim: int,
-        normalize: bool = False
+        normalize: bool = False,
+        shallow: bool = False
     ) -> None:
         super().__init__()
 
@@ -25,18 +26,20 @@ class Decode_MLP(nn.Module):
         self.hidden_dim = hidden_dim
         self.out_dim = out_dim
         # if decoder:
-        self.mlp = nn.Sequential(
-            nn.Linear(input_dim, hidden_dim),
-            nn.ReLU(),
-            nn.LayerNorm(hidden_dim),
-            nn.Linear(hidden_dim, hidden_dim * 2),
-            nn.ReLU(),
-            nn.LayerNorm(hidden_dim * 2),
-            nn.Linear(hidden_dim * 2, out_dim),
-            nn.ReLU(),
-            L2NormalizationLayer() if normalize else nn.Identity()
-        )
-        
+        if shallow:
+            self.mlp = nn.Sequential(
+                nn.Linear(input_dim, hidden_dim),
+                nn.ReLU(),
+                nn.Linear(hidden_dim, out_dim)
+            )
+        else:
+            self.mlp = nn.Sequential(
+                nn.Linear(input_dim, hidden_dim),
+                nn.ReLU(),
+                nn.Linear(hidden_dim, hidden_dim * 2),
+                nn.ReLU(),
+                nn.Linear(hidden_dim * 2, out_dim)
+            )
         # self.mlp = nn.Sequential(
         #     nn.Linear(input_dim, hidden_dim * 2),
         #     nn.ReLU(),
