@@ -172,7 +172,7 @@ class FinetuneTrainer(Trainer):
                 rq_loss, sequence_output = self.model.finetune(input_ids, all_ids, user_ids)
                 cross_loss = self.cross_entropy(sequence_output, target_pos, target_neg)
                 self.optim.zero_grad()
-                (self.args.rq_loss_weight * rq_loss + cross_loss).backward(retain_graph=True)
+                (self.args.rq_loss_weight * rq_loss + cross_loss).backward(retain_graph=False)
                 self.optim.step()
 
                 rec_avg_loss += (self.args.rq_loss_weight * rq_loss + cross_loss).item()

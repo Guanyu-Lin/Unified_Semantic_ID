@@ -36,6 +36,7 @@ def main():
     parser.add_argument("--reshape_size", type=int, default=64, help="reshape size of id embedding")
     parser.add_argument("--semantic_dim_size", type=int, default=32, help="dim size of semantic embedding")
     parser.add_argument("--codebook_n_layer", type=int, default=3, help="codebook size of transformer model")
+    parser.add_argument("--cluster_size", type=int, default=50, help="cluster size of transformer model")
     parser.add_argument("--codebook_size", type=int, default=256, help="number of each codebook")
 
     parser.add_argument("--num_hidden_layers", type=int, default=2, help="number of layers")

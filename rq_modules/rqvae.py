@@ -31,7 +31,8 @@ class RqVae(nn.Module):
         distance_type: str = "Cosine",
         is_cluster: bool = False,
         reshape_dim = 64,
-        is_reconstruction = False
+        is_reconstruction = False,
+        cluster_size = 50
     ) -> None:
         super().__init__()
 
@@ -45,11 +46,12 @@ class RqVae(nn.Module):
         self.is_cluster = is_cluster
         self.distance_type = distance_type
         self.is_reconstruction = is_reconstruction
+        self.cluster_size = cluster_size
         addional_n_layer = 0
         if self.is_cluster:
             self.rvq_cluster = ResidualVQ(
                 dim = self.embed_dim,
-                codebook_size = 50,
+                codebook_size = self.cluster_size,
                 num_quantizers = 1,
                 kmeans_init = True,   # set to True
                 use_cosine_sim = True,

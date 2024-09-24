@@ -43,7 +43,8 @@ class S3RecModel(nn.Module):
             distance_type=args.distance_type,
             is_cluster=args.is_cluster,
             reshape_dim = args.reshape_size,
-            is_reconstruction = args.is_reconstruction
+            is_reconstruction = args.is_reconstruction,
+            cluster_size = args.cluster_size
         )
 
 
@@ -97,22 +98,25 @@ class S3RecModel(nn.Module):
         # label_count = extended_cluster_mask.sum(dim=2) # b, c
         # weight = torch.nn.functional.normalize(extended_cluster_mask.float(), p=1, dim=2) # l1 normalization
         # cluster_emb = torch.mm(weight, sequence_emb) # b, c, d
-        cluster_mask = []
+        cluster_mask_ls = []
 
-        cluster_emb = []
-        for sample, label, mask in zip(rq_item_embeddings, labels, all_attention_mask):
-            M = torch.zeros(self.args.codebook_size, sample.shape[0], device=sequence.device)
-            M[label, torch.arange(sample.shape[0])] = 1
-            M = (M.long() & mask.view(-1, 1, self.args.max_seq_length_all)).squeeze(0) # c, s
-            cluster_mask.append(M)
-    
-            M = torch.nn.functional.normalize(M.float(), p=1, dim=1)
-            cluster_emb.append(torch.mm(M, sample))
+        cluster_emb_ls = []
         # import pdb
         # pdb.set_trace()
-        cluster_emb = torch.stack(cluster_emb, 0)
-        cluster_mask = torch.stack(cluster_mask, 0)
-
+        for sample, label, mask in zip(sequence_emb, labels, all_attention_mask):
+            M = torch.zeros(self.args.cluster_size, sample.shape[0], device=sequence.device)
+            M[label, torch.arange(sample.shape[0])] = 1
+            M = (M.long() & mask.view(-1, 1, self.args.max_seq_length_all)).squeeze(0) # c, s
+            cluster_mask_ls.append(M)
+    
+            M = torch.nn.functional.normalize(M.float(), p=1, dim=1)
+            cluster_emb_ls.append(torch.mm(M, sample))
+        # import pdb
+        # pdb.set_trace()
+        cluster_emb = torch.stack(cluster_emb_ls, 0)
+        cluster_mask = torch.stack(cluster_mask_ls, 0)
+        del cluster_emb_ls[:]
+        del cluster_mask_ls[:]
    
 
         return rq_loss, cluster_emb, cluster_mask, text_item_embeddings
@@ -129,7 +133,7 @@ class S3RecModel(nn.Module):
 
 
         rq_loss, rq_index, rq_item_embeddings = self.rq_model(text_item_embeddings)
-
+        
         if self.args.only_semantic:
             item_embeddings = rq_item_embeddings
         else:
@@ -184,9 +188,9 @@ class S3RecModel(nn.Module):
             rq_loss_cluster, cluster_emb, cluster_mask, text_emb = self.add_position_embedding_cluster(all_ids, all_attention_mask)
             rq_loss += rq_loss_cluster
             cluster_mask = (torch.sum(cluster_mask, 2) > 0).long()
-            extended_target2cluster_mask = attention_mask.view(-1, max_len, 1) & cluster_mask.view(-1, 1, self.args.codebook_size) # b, s, c
-            import pdb
-            pdb.set_trace()
+            extended_target2cluster_mask = attention_mask.view(-1, max_len, 1) & cluster_mask.view(-1, 1, self.args.cluster_size) # b, s, c
+            # import pdb
+            # pdb.set_trace()
             item_encoded_layers_cluster = self.item_encoder_cluster(sequence_emb, cluster_emb,
                                                 extended_target2cluster_mask.unsqueeze(1),
                                                 output_all_encoded_layers=True)
