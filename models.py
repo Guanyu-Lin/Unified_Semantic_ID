@@ -101,16 +101,17 @@ class S3RecModel(nn.Module):
         cluster_mask_ls = []
 
         cluster_emb_ls = []
-        # import pdb
-        # pdb.set_trace()
+
         for sample, label, mask in zip(sequence_emb, labels, all_attention_mask):
+            # import pdb
+            # pdb.set_trace()
             M = torch.zeros(self.args.cluster_size, sample.shape[0], device=sequence.device)
             M[label, torch.arange(sample.shape[0])] = 1
             M = (M.long() & mask.view(-1, 1, self.args.max_seq_length_all)).squeeze(0) # c, s
             cluster_mask_ls.append(M)
     
-            M = torch.nn.functional.normalize(M.float(), p=1, dim=1)
-            cluster_emb_ls.append(torch.mm(M, sample))
+            # M = torch.nn.functional.normalize(M.float(), p=1, dim=1)
+            cluster_emb_ls.append(torch.mm(M.float(), sample))
         # import pdb
         # pdb.set_trace()
         cluster_emb = torch.stack(cluster_emb_ls, 0)
@@ -184,9 +185,10 @@ class S3RecModel(nn.Module):
         # sequence_text_emb = self.look_embedding(input_ids)
         # sequence_rq_emb = self.convert_rq_embedding(sequence_text_emb)
         encoded_sequence = item_encoded_layers[-1]
-        if self.args.is_cluster:
+        # if self.args.is_cluster:
+        if self.args.add_cluster:
             rq_loss_cluster, cluster_emb, cluster_mask, text_emb = self.add_position_embedding_cluster(all_ids, all_attention_mask)
-            rq_loss += rq_loss_cluster
+            # rq_loss += rq_loss_cluster
             cluster_mask = (torch.sum(cluster_mask, 2) > 0).long()
             extended_target2cluster_mask = attention_mask.view(-1, max_len, 1) & cluster_mask.view(-1, 1, self.args.cluster_size) # b, s, c
             # import pdb

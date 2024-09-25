@@ -51,6 +51,8 @@ def main():
     parser.add_argument('--rq_loss_weight', type=float, default=1)
     parser.add_argument('--distance_type', default="hybrid", type=str)
     parser.add_argument('--is_cluster', action='store_true')
+    parser.add_argument('--add_cluster', action='store_true')
+
     parser.add_argument('--is_text', action='store_true')
     parser.add_argument('--is_reconstruction', action='store_true')
 
@@ -102,10 +104,16 @@ def main():
     cluster_str = "no_cluster"
     if args.is_cluster:
         cluster_str = "cluster"
+        
     reconstruction_str = "no_reconstruction"
     if args.is_reconstruction:
         reconstruction_str = "reconstruction"
-    args_str = f'{args.model_name}-{args.data_name}-{args.id_dim_size}-{args.codebook_n_layer}-{args.codebook_size}-{args.semantic_dim_size}-{args.distance_type}-{reconstruction_str}-{cluster_str}'
+        
+    add_cluster_str = "no_add_cluster"    
+    if args.add_cluster:
+        add_cluster_str = "add_cluster"
+    # reconstruction_str = "no_reconstruction"
+    args_str = f'{args.model_name}-{args.data_name}-{args.id_dim_size}-{args.codebook_n_layer}-{args.codebook_size}-{args.semantic_dim_size}-{args.distance_type}-{reconstruction_str}-{cluster_str}-{add_cluster_str}'
     args.log_file = os.path.join(args.output_dir, args_str + '.txt')
     print(str(args))
     with open(args.log_file, 'a') as f:
