@@ -1,0 +1,3 @@
+python train_sample.py --hidden_size 64 --semantic_dim_size 64 --codebook_n_layer 3 --id_dim_size 8 --reshape_size 72 --codebook_size 256 --rq_loss_weight 1 --is_text --distance_type "hybrid" --is_reconstruction --num_cluster_layers 1 --is_cluster --cluster_size 50 --hard_gate 1 --add_cluster "concat" --data_name "Beauty"
+
+python train_sample.py --hidden_size 64 --semantic_dim_size 64 --codebook_n_layer 3 --id_dim_size 8 --reshape_size 72 --codebook_size 256 --rq_loss_weight 1 --is_text --distance_type "hybrid" --is_reconstruction --num_cluster_layers 1 --is_cluster --cluster_size 50 --hard_gate 1 --add_cluster "soft_gate" --data_name "Beauty"

@@ -90,21 +90,31 @@ class Trainer:
         self.model.load_state_dict(torch.load(file_name))
 
     def cross_entropy(self, seq_out, pos_ids, neg_ids):
-        # [batch seq_len hidden_size]
 
-        text_pos_emb = self.model.text_item_embeddings(pos_ids)
-        _, _, rq_pos_emb = self.model.rq_model(text_pos_emb)
-        text_neg_emb = self.model.text_item_embeddings(neg_ids)
-        _, _, rq_neg_emb = self.model.rq_model(text_neg_emb)
 
-        if self.args.only_semantic:
+        if self.args.token_type == "semantic":
+            text_pos_emb = self.model.text_item_embeddings(pos_ids)
+            _, _, rq_pos_emb = self.model.rq_model(text_pos_emb)
+            text_neg_emb = self.model.text_item_embeddings(neg_ids)
+            _, _, rq_neg_emb = self.model.rq_model(text_neg_emb)
+
             pos_emb = rq_pos_emb
             neg_emb = rq_neg_emb
-        else:
+        elif self.args.token_type == "hybrid":
+            text_pos_emb = self.model.text_item_embeddings(pos_ids)
+            _, _, rq_pos_emb = self.model.rq_model(text_pos_emb)
+            text_neg_emb = self.model.text_item_embeddings(neg_ids)
+            _, _, rq_neg_emb = self.model.rq_model(text_neg_emb)
+
             unique_pos_emb = self.model.unique_item_embeddings(pos_ids)
             pos_emb = torch.cat([rq_pos_emb, unique_pos_emb], -1)
             unique_neg_emb = self.model.unique_item_embeddings(neg_ids)
             neg_emb = torch.cat([rq_neg_emb, unique_neg_emb], -1)
+        else:
+            unique_pos_emb = self.model.unique_item_embeddings(pos_ids)
+            pos_emb = unique_pos_emb
+            unique_neg_emb = self.model.unique_item_embeddings(neg_ids)
+            neg_emb = unique_neg_emb
 
         # [batch*seq_len hidden_size]
         pos = pos_emb.view(-1, pos_emb.size(2))
@@ -124,13 +134,19 @@ class Trainer:
 
     def predict_sample(self, seq_out, test_neg_sample):
         # [batch 100 hidden_size]
-        text_item_embeddings = self.model.text_item_embeddings(test_neg_sample)
-        _, _, rq_item_emb = self.model.rq_model(text_item_embeddings, True)
-        if self.args.only_semantic:
+        
+        if self.args.token_type == "semantic":
+            text_item_embeddings = self.model.text_item_embeddings(test_neg_sample)
+            _, _, rq_item_emb = self.model.rq_model(text_item_embeddings, True)
             test_item_emb = rq_item_emb
-        else:
+        elif self.args.token_type == "hybrid":
+            text_item_embeddings = self.model.text_item_embeddings(test_neg_sample)
+            _, _, rq_item_emb = self.model.rq_model(text_item_embeddings, True)
             unique_item_embeddings = self.model.unique_item_embeddings(test_neg_sample)
             test_item_emb =  torch.cat([rq_item_emb, unique_item_embeddings], -1)
+        else:
+            unique_item_embeddings = self.model.unique_item_embeddings(test_neg_sample)
+            test_item_emb = unique_item_embeddings
 
         test_logits = torch.bmm(test_item_emb, seq_out.unsqueeze(-1)).squeeze(-1)  # [B 100]
         return test_logits

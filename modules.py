@@ -100,7 +100,7 @@ class SelfAttention(nn.Module):
         x = x.view(*new_x_shape)
         return x.permute(0, 2, 1, 3)
 
-    def forward(self, input_tensor_query, input_tensor, attention_mask):
+    def forward(self, input_tensor_query, input_tensor, attention_mask, show_pdb=False):
         mixed_query_layer = self.query(input_tensor_query)
         mixed_key_layer = self.key(input_tensor)
         mixed_value_layer = self.value(input_tensor)
@@ -116,9 +116,9 @@ class SelfAttention(nn.Module):
         # Apply the attention mask is (precomputed for all layers in BertModel forward() function)
         # [batch_size heads seq_len seq_len] scores
         # [batch_size 1 1 seq_len]
-        # if input_tensor.shape[1] == 512:
-        #     import pdb
-        #     pdb.set_trace()
+        if show_pdb:
+            import pdb
+            pdb.set_trace()
         attention_scores = attention_scores + attention_mask
 
         # Normalize the attention scores to probabilities.
@@ -164,6 +164,59 @@ class Intermediate(nn.Module):
 
         return hidden_states
 
+class Intermediate_cat(nn.Module):
+    def __init__(self, args):
+        super(Intermediate_cat, self).__init__()
+        self.args = args
+        self.dense_1 = nn.Linear(args.reshape_size * 2, args.hidden_size * 4)
+        if isinstance(args.hidden_act, str):
+            self.intermediate_act_fn = ACT2FN[args.hidden_act]
+        else:
+            self.intermediate_act_fn = args.hidden_act
+
+        self.dense_2 = nn.Linear(args.hidden_size * 4, args.reshape_size)
+        self.LayerNorm = LayerNorm(args.reshape_size, eps=1e-12)
+        self.dropout = nn.Dropout(args.hidden_dropout_prob)
+
+
+    def forward(self, input_tensor, input_tensor_cluster):
+
+        hidden_states = self.dense_1(torch.cat([input_tensor, input_tensor_cluster], -1))
+        hidden_states = self.intermediate_act_fn(hidden_states)
+        hidden_states = self.dense_2(hidden_states)
+        hidden_states = self.dropout(hidden_states)
+        hidden_states = self.LayerNorm(hidden_states + input_tensor)
+
+        return hidden_states
+
+class Intermediate_gate(nn.Module):
+    def __init__(self, args):
+        super(Intermediate_gate, self).__init__()
+        self.args = args
+        self.dense_1 = nn.Linear(args.reshape_size * 2, args.hidden_size * 4)
+        if isinstance(args.hidden_act, str):
+            self.intermediate_act_fn = ACT2FN[args.hidden_act]
+        else:
+            self.intermediate_act_fn = args.hidden_act
+
+        self.dense_2 = nn.Linear(args.hidden_size * 4, args.reshape_size)
+        self.sigmoid_act_fn = F.sigmoid
+
+
+    def forward(self, input_tensor, input_tensor_seq, input_tensor_cluster):
+
+        hidden_states = self.dense_1(torch.cat([input_tensor, input_tensor_cluster], -1))
+        hidden_states = self.intermediate_act_fn(hidden_states)
+
+        hidden_states = self.dense_2(hidden_states)
+        if self.args.add_cluster == "soft_gate":
+            gate_out = self.sigmoid_act_fn(hidden_states)
+        else: gate_out = self.args.hard_gate
+        # import pdb
+        # pdb.set_trace()
+        hidden_output = (1 - gate_out) * input_tensor_seq + gate_out * input_tensor_cluster
+        return hidden_output
+
 
 class Layer(nn.Module):
     def __init__(self, args):
@@ -171,8 +224,8 @@ class Layer(nn.Module):
         self.attention = SelfAttention(args)
         self.intermediate = Intermediate(args)
 
-    def forward(self, hidden_states_query, hidden_states, attention_mask):
-        attention_output = self.attention(hidden_states_query, hidden_states, attention_mask)
+    def forward(self, hidden_states_query, hidden_states, attention_mask, show_pdb=False):
+        attention_output = self.attention(hidden_states_query, hidden_states, attention_mask, show_pdb)
         intermediate_output = self.intermediate(attention_output)
         return intermediate_output
 
@@ -199,13 +252,13 @@ class Encoder_Cluster(nn.Module):
         super(Encoder_Cluster, self).__init__()
         layer = Layer(args)
         self.layer = nn.ModuleList([copy.deepcopy(layer)
-                                    for _ in range(args.num_hidden_layers)])
+                                    for _ in range(args.num_cluster_layers)])
 
     def forward(self, hidden_states, hidden_states_cluster, attention_mask, output_all_encoded_layers=True):
 
         all_encoder_layers = []
         for layer_module in self.layer:
-            hidden_states = layer_module(hidden_states, hidden_states_cluster, attention_mask)
+            hidden_states = layer_module(hidden_states, hidden_states_cluster, attention_mask, show_pdb=False)
             if output_all_encoded_layers:
                 all_encoder_layers.append(hidden_states)
         if not output_all_encoded_layers:
