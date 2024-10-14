@@ -1,5 +1,5 @@
 
-Code for the Paper ["**Unified Semantic and ID Representation Learning in Recommendation"**]
+Code for the Paper **"Unified Semantic and ID Representation Learning in Recommendation"**
 
 ### requirements
 ```shell script
