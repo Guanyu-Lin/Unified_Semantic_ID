@@ -1,7 +1,3 @@
-# -*- coding: utf-8 -*-
-# @Time    : 2020/11/6 15:51
-# @Author  : Hui Wang
-
 import numpy as np
 from collections import defaultdict
 
