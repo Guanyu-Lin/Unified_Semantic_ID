@@ -1,7 +1,3 @@
-# -*- coding:utf-8 -*-
-# __author__ = 'wanghui'
-# __date__ = '2020/03/30 10:53'
-
 import numpy as np
 
 import copy
