@@ -1,7 +1,3 @@
-# -*- coding: utf-8 -*-
-# @Time    : 2020/3/30 10:57
-# @Author  : Hui Wang
-
 import torch
 from rq_modules.rqvae import RqVae
 import torch.nn as nn
