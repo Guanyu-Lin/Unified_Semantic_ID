@@ -1,6 +1,3 @@
-# -*- coding: utf-8 -*-
-# @Time    : 2020/4/4 8:18
-# @Author  : Hui Wang
 
 from collections import defaultdict
 import random
